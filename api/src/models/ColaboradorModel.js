@@ -50,6 +50,12 @@ const Colaborador = database.define('Colaboradores', {
       key: 'id',
     },
   },
+  status: {
+    type: DataTypes.STRING,
+  },
+  obs: {
+    type: DataTypes.STRING,
+  },
   funcaoId: {
     type: Sequelize.INTEGER,
     references: {
