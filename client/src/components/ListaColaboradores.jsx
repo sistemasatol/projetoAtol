@@ -85,7 +85,7 @@ const ListaColaboradores = () => {
     }
 
     return (
-        <Box sx={{ width: '90%', margin: 'auto', mt: 5 }}>
+        <Box sx={{ width: '35%', margin: 'auto', mt: 5 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h4">Lista de Colaboradores</Typography>
                 <Button
