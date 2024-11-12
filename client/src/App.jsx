@@ -1,12 +1,17 @@
-import { useState } from 'react'
+import { Route, Routes } from 'react-router-dom'
 import './App.css'
-import ListaColaboradores from './components/ListaColaboradores'
+
+import PageColaboradores from './pages/PageColaboradores'
+import PageEmpresas from './pages/PageEmpresas'
 function App() {
-  
+
 
   return (
     <>
-      <ListaColaboradores />
+      <Routes>
+        <Route path="/colaboradores" element={<PageColaboradores />} />
+        <Route path="/empresas" element={<PageEmpresas />} />
+      </Routes>
     </>
   )
 }
