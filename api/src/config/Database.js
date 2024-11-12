@@ -12,6 +12,4 @@ database.sync({ force: false })
             console.error("Erro ao sincronizar com o banco de dados:", err);
       });
 
-
-
 module.exports = database;

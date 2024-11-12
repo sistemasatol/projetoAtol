@@ -9,6 +9,11 @@ export const createColaborador = async (formData) => {
         const response = await api.post('/colaboradores', formData);
         return response.data;
     } catch (error) {
+        if (error.response) {
+            console.error('Erro ao criar colaborador:', error.response.status, error.response.data);
+        } else {
+            console.error('Erro desconhecido:', error.message);
+        }
         console.error('Erro ao criar colaborador:', error.response || error.message);
         throw error;
     }

@@ -3,6 +3,7 @@ const EmpresaController = require('./controllers/EmpresaController');
 const ObraController = require('./controllers/ObraController');
 const ColaboradorController = require('./controllers/ColaboradorController');
 const FuncaoController = require('./controllers/FuncaoController');
+
 const routes = express.Router();
 
 // Rotas para Empresa

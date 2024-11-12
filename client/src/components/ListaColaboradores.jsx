@@ -4,8 +4,8 @@ import { getColaboradores } from '../services/apiColaboradores';
 import { getEmpresas } from '../services/apiEmpresas';
 import { getFuncoes } from '../services/apiFuncoes';
 import { getObras } from '../services/apiObras';
-import CadastroColaborador from './CadastroColaborador'; 
-import EditarColaborador from './EditarColaborador'; 
+import CadastroColaborador from './CadastroColaborador';
+import EditarColaborador from './EditarColaborador';
 
 const ListaColaboradores = () => {
     const [colaboradores, setColaboradores] = useState([]);
@@ -72,7 +72,7 @@ const ListaColaboradores = () => {
     };
 
     const handleCloseCadastroModal = () => {
-        setOpenCadastroModal(false); // Fecha o modal de cadastro
+        setOpenCadastroModal(false);
     };
 
     const handleCloseEdicaoModal = () => {

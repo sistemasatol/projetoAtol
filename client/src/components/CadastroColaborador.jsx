@@ -5,68 +5,117 @@ import {
     TextField,
     Button,
     Typography,
-    MenuItem
+    MenuItem,
+    CircularProgress
 } from '@mui/material';
-import { createColaborador } from '../services/apiColaboradores'; // Importe a função de API para cadastro
+import { createColaborador } from '../services/apiColaboradores';
+import { getEmpresas } from '../services/apiEmpresas';
+import { getObras } from '../services/apiObras';
+import { getFuncoes } from '../services/apiFuncoes';
+import * as Yup from 'yup';
 
 const CadastroColaborador = ({ open, onClose, onCadastroSuccess }) => {
-    const [nome, setNome] = useState('');
-    const [sobrenome, setSobrenome] = useState('');
-    const [telefone, setTelefone] = useState('');
-    const [tipoContrato, setTipoContrato] = useState('');
-    const [tipoDocumento, setTipoDocumento] = useState('');
-    const [numDocumento, setNumDocumento] = useState('');
-    const [obs, setObs] = useState('');
-    const [empresaId, setEmpresaId] = useState('');
-    const [funcaoId, setFuncaoId] = useState('');
-    const [obraId, setObraId] = useState('');
-    const [status, setStatus] = useState('');
-
+    // Estado dos campos de entrada
+    const [formData, setFormData] = useState({
+        nome: '',
+        sobrenome: '',
+        telefone: '',
+        tipoContrato: '',
+        tipoDocumento: '',
+        num_documento: '',
+        obs: '',
+        empresaId: '',
+        funcaoId: '',
+        obraId: '',
+        status: ''
+    });
     const [empresas, setEmpresas] = useState([]);
     const [obras, setObras] = useState([]);
     const [funcoes, setFuncoes] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    // Esquema de validação Yup
+    const validationSchema = Yup.object().shape({
+        nome: Yup.string().required("Nome é obrigatório"),
+        sobrenome: Yup.string().required("Sobrenome é obrigatório"),
+        num_documento: Yup.string().required("Número de documento é obrigatório"),
+        empresaId: Yup.string().required("Selecione uma empresa"),
+        funcaoId: Yup.string().required("Selecione uma função"),
+        obraId: Yup.string().required("Selecione uma obra"),
+        status: Yup.string().required("Selecione um status")
+    });
 
     useEffect(() => {
         const fetchInformacoes = async () => {
             try {
-                const empresasData = await getEmpresas();
-                const funcoesData = await getFuncoes();
-                const obrasData = await getObras();
-
+                setLoading(true);
+                const [empresasData, funcoesData, obrasData] = await Promise.all([
+                    getEmpresas(),
+                    getFuncoes(),
+                    getObras()
+                ]);
                 setEmpresas(empresasData);
-                setObras(obrasData);
                 setFuncoes(funcoesData);
-
+                setObras(obrasData);
             } catch (err) {
                 console.error("Erro ao carregar dados", err);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchInformacoes();
     }, []);
 
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
+
     const handleSubmit = async () => {
         try {
-            const novoColaborador = {
-                nome,
-                sobrenome,
-                telefone,
-                tipo_contrato: tipoContrato,
-                tipo_documento: tipoDocumento,
-                numDocumento,
-                obs,
-                empresaId,
-                funcaoId,
-                obraId,
-                status
-            };
-
-            await createColaborador(novoColaborador);
+            // Validação dos dados
+            await validationSchema.validate(formData, { abortEarly: false });
+            setLoading(true);
+            await createColaborador(formData);
             onCadastroSuccess();
             onClose();
+            limparCampos();
         } catch (error) {
-            console.error("Erro ao cadastrar colaborador", error);
+            if (error.name === 'ValidationError') {
+                const validationErrors = {};
+                error.inner.forEach((err) => {
+                    validationErrors[err.path] = err.message;
+                });
+                setErrors(validationErrors);
+            } else {
+                console.error("Erro ao cadastrar colaborador", error);
+                alert("Erro ao cadastrar colaborador. Tente novamente.");
+            }
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const limparCampos = () => {
+        setFormData({
+            nome: '',
+            sobrenome: '',
+            telefone: '',
+            tipoContrato: '',
+            tipoDocumento: '',
+            num_documento: '',
+            obs: '',
+            empresaId: '',
+            funcaoId: '',
+            obraId: '',
+            status: ''
+        });
+        setErrors({});
     };
 
     return (
@@ -75,7 +124,7 @@ const CadastroColaborador = ({ open, onClose, onCadastroSuccess }) => {
                 sx={{
                     width: { xs: '100%', sm: 400 },
                     margin: 'auto',
-                    mt: '10%',
+                    mt: '5%',
                     padding: 3,
                     backgroundColor: 'white',
                     boxShadow: 24,
@@ -84,41 +133,33 @@ const CadastroColaborador = ({ open, onClose, onCadastroSuccess }) => {
             >
                 <Typography variant="h6" mb={2}>Cadastrar Novo Colaborador</Typography>
 
-                <TextField
-                    label="Nome"
-                    fullWidth
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    margin="normal"
-                    required
-                />
-
-                <TextField
-                    label="Sobrenome"
-                    fullWidth
-                    value={sobrenome}
-                    onChange={(e) => setSobrenome(e.target.value)}
-                    margin="normal"
-                    required
-                />
-
-                <TextField
-                    label="Telefone"
-                    fullWidth
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                    margin="normal"
-                    required
-                />
+                {[
+                    { label: 'Nome', name: 'nome', required: true },
+                    { label: 'Sobrenome', name: 'sobrenome', required: true },
+                    { label: 'Telefone', name: 'telefone' }
+                ].map(({ label, name, required }) => (
+                    <TextField
+                        key={name}
+                        label={label}
+                        fullWidth
+                        name={name}
+                        value={formData[name]}
+                        onChange={handleInputChange}
+                        margin="normal"
+                        required={required}
+                        error={!!errors[name]}
+                        helperText={errors[name]}
+                    />
+                ))}
 
                 <TextField
                     label="Tipo de Contrato"
                     fullWidth
                     select
-                    value={tipoContrato}
-                    onChange={(e) => setTipoContrato(e.target.value)}
+                    name="tipoContrato"
+                    value={formData.tipoContrato}
+                    onChange={handleInputChange}
                     margin="normal"
-                    required
                 >
                     <MenuItem value="CLT">CLT</MenuItem>
                     <MenuItem value="PJ">PJ</MenuItem>
@@ -129,89 +170,69 @@ const CadastroColaborador = ({ open, onClose, onCadastroSuccess }) => {
                     label="Tipo de Documento"
                     fullWidth
                     select
-                    value={tipoDocumento}
-                    onChange={(e) => setTipoDocumento(e.target.value)}
+                    name="tipoDocumento"
+                    value={formData.tipoDocumento}
+                    onChange={handleInputChange}
                     margin="normal"
-                    required
                 >
                     <MenuItem value="RG">RG</MenuItem>
                     <MenuItem value="CPF">CPF</MenuItem>
                 </TextField>
 
-                <TextField
-                    label="Número de Documento"
-                    fullWidth
-                    value={numDocumento}
-                    onChange={(e) => setNumDocumento(e.target.value)}
-                    margin="normal"
-                    required
-                />
+                {[
+                    { label: 'Número de Documento', name: 'num_documento', required: true },
+                    { label: 'Observações', name: 'obs' }
+                ].map(({ label, name, required }) => (
+                    <TextField
+                        key={name}
+                        label={label}
+                        fullWidth
+                        name={name}
+                        value={formData[name]}
+                        onChange={handleInputChange}
+                        margin="normal"
+                        required={required}
+                        error={!!errors[name]}
+                        helperText={errors[name]}
+                    />
+                ))}
 
-                <TextField
-                    label="Observações"
-                    fullWidth
-                    value={obs}
-                    onChange={(e) => setObs(e.target.value)}
-                    margin="normal"
-                />
+                {[{
+                    label: 'Empresa', name: 'empresaId', options: empresas, required: true
+                }, {
+                    label: 'Função', name: 'funcaoId', options: funcoes, required: true
+                }, {
+                    label: 'Obra', name: 'obraId', options: obras, required: true
+                }, {
+                    label: 'Status', name: 'status', options: [{ id: 'Ativo', nome: 'Ativo' }, { id: 'Inativo', nome: 'Inativo' }], required: true
+                }].map(({ label, name, options, required }) => (
+                    <TextField
+                        key={name}
+                        label={label}
+                        fullWidth
+                        select
+                        name={name}
+                        value={formData[name]}
+                        onChange={handleInputChange}
+                        margin="normal"
+                        required={required}
+                        error={!!errors[name]}
+                        helperText={errors[name]}
+                    >
+                        {options.map((option) => (
+                            <MenuItem key={option.id} value={option.id}>{option.nome}</MenuItem>
+                        ))}
+                    </TextField>
+                ))}
 
-                <TextField
-                    label="Empresa"
-                    fullWidth
-                    select
-                    value={empresaId}
-                    onChange={(e) => setEmpresaId(e.target.value)}
-                    margin="normal"
-                    required
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSubmit}
+                    sx={{ mt: 2 }}
+                    disabled={loading}
                 >
-                    {empresas.map((empresa) => {
-                        return <MenuItem key={empresa.id} value={empresa.id}>{empresa.nome}</MenuItem>;
-                    })}
-                </TextField>
-
-                <TextField
-                    label="Função"
-                    fullWidth
-                    select
-                    value={funcaoId}
-                    onChange={(e) => setFuncaoId(e.target.value)}
-                    margin="normal"
-                    required
-                >
-                    {funcoes.map((funcao) => {
-                        return <MenuItem key={funcao.id} value={funcao.id}>{funcao.nome}</MenuItem>;
-                    })}
-                </TextField>
-
-                <TextField
-                    label="Obra"
-                    fullWidth
-                    select
-                    value={obraId}
-                    onChange={(e) => setObraId(e.target.value)}
-                    margin="normal"
-                    required
-                >
-                    {obras.map((obra) => {
-                        return <MenuItem key={obra.id} value={obra.id}>{obra.nome}</MenuItem>;
-                    })}
-                </TextField>
-
-                <TextField
-                    label="Status"
-                    fullWidth
-                    select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    margin="normal"
-                    required
-                >
-                    <MenuItem value="Ativo">Ativo</MenuItem>
-                    <MenuItem value="Inativo">Inativo</MenuItem>
-                </TextField>
-
-                <Button variant="contained" color="primary" onClick={handleSubmit} sx={{ mt: 2 }}>
-                    Salvar
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Salvar'}
                 </Button>
             </Box>
         </Modal>
